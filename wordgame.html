@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordhoard — A Discord Activity Spelling Contest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.0.0/dist/index.js"></script>
+
+<style>
+  :root{
+    --bg-deep:#0e1913;
+    --bg-deeper:#0a130e;
+    --panel:#16241d;
+    --panel-2:#1c2e25;
+    --panel-border:#33503f;
+    --brass:#c9a24d;
+    --brass-bright:#e7c876;
+    --brass-dim:#8a713a;
+    --parchment:#efe6cc;
+    --parchment-2:#e4d6ab;
+    --ink:#241c10;
+    --cream:#f2ead9;
+    --muted:#8fa898;
+    --muted-2:#5f7869;
+    --sage:#7fa06e;
+    --sage-bright:#a3c98f;
+    --burgundy:#9a3f3a;
+    --burgundy-bright:#c85950;
+    --shadow:rgba(0,0,0,0.45);
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Source Serif 4', Georgia, serif;
+    --font-mono:'IBM Plex Mono', 'Consolas', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(201,162,77,0.10), transparent 55%),
+      radial-gradient(ellipse at 50% 120%, rgba(0,0,0,0.5), transparent 60%),
+      linear-gradient(180deg, var(--bg-deep), var(--bg-deeper));
+    color:var(--cream);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    padding:28px 16px 60px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .masthead{
+    text-align:center;
+    margin-bottom:26px;
+    position:relative;
+  }
+  .masthead .eyebrow{
+    font-family:var(--font-mono);
+    letter-spacing:0.35em;
+    font-size:11px;
+    text-transform:uppercase;
+    color:var(--brass);
+    opacity:0.85;
+  }
+  .masthead h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(32px, 6vw, 54px);
+    margin:6px 0 4px;
+    letter-spacing:0.01em;
+    color:var(--parchment);
+    text-shadow:0 2px 0 rgba(0,0,0,0.4);
+  }
+  .masthead .sub{
+    font-size:14px;
+    color:var(--muted);
+    font-style:italic;
+  }
+  .masthead .rule{
+    width:220px;height:2px;margin:14px auto 0;
+    background:linear-gradient(90deg, transparent, var(--brass), transparent);
+    opacity:0.7;
+  }
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    box-shadow:0 18px 40px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+    padding:28px;
+    position:relative;
+  }
+  .panel::before{
+    content:"";
+    position:absolute; inset:6px;
+    border:1px solid rgba(201,162,77,0.18);
+    border-radius:9px;
+    pointer-events:none;
+  }
+
+  .hidden{display:none !important;}
+
+  button{font-family:var(--font-body); cursor:pointer;}
+  .btn{
+    border:1px solid var(--brass-dim);
+    background:linear-gradient(180deg, #2a3f32, #1c2e24);
+    color:var(--parchment);
+    padding:11px 22px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:0.02em;
+    transition:transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .btn:hover{border-color:var(--brass); box-shadow:0 0 0 1px rgba(201,162,77,0.25);}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{
+    background:linear-gradient(180deg, var(--brass-bright), var(--brass));
+    color:var(--ink);
+    border:1px solid var(--brass-dim);
+    font-weight:700;
+  }
+  .btn-primary:hover{box-shadow:0 0 0 1px rgba(231,200,118,0.5), 0 6px 18px rgba(201,162,77,0.25);}
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--panel-border);
+    color:var(--muted);
+    padding:8px 14px;
+    font-size:13px;
+  }
+  .btn-ghost:hover{color:var(--parchment); border-color:var(--brass-dim);}
+
+  input[type=text], select{
+    font-family:var(--font-body);
+    background:var(--bg-deeper);
+    border:1px solid var(--panel-border);
+    color:var(--cream);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:15px;
+  }
+  select{ color: var(--parchment); cursor: pointer; min-width: 160px; }
+
+  .mode-toggle{
+    display:flex; gap:10px; margin-bottom:22px;
+  }
+  .mode-card{
+    flex:1;
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:16px 18px;
+    background:var(--bg-deeper);
+    cursor:pointer;
+    transition:border-color 0.15s, background 0.15s;
+  }
+  .mode-card.active{
+    border-color:var(--brass);
+    background:linear-gradient(180deg, rgba(201,162,77,0.10), rgba(201,162,77,0.02));
+  }
+  .mode-card h3{
+    margin:0 0 4px; font-family:var(--font-display); font-size:19px; color:var(--parchment);
+  }
+  .mode-card p{margin:0; font-size:13px; color:var(--muted); line-height:1.4;}
+
+  .section-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:22px 0 10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-label::after{
+    content:""; flex:1; height:1px; background:var(--panel-border);
+  }
+
+  .setting-row{
+    display: flex; align-items: center; gap: 16px; background: rgba(0,0,0,0.15);
+    padding: 12px 18px; border-radius: 10px; border: 1px solid var(--panel-border); margin-bottom: 12px;
+  }
+  .setting-row label{ font-family: var(--font-mono); font-size: 13px; color: var(--parchment-2); }
+
+  .stepper{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+  .stepper button{
+    width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--brass-dim); background:var(--bg-deeper); color:var(--brass-bright);
+    font-size:16px; line-height:1;
+  }
+  .stepper .count{font-family:var(--font-mono); font-size:18px; min-width:20px; text-align:center;}
+
+  .bot-row{
+    display:grid;
+    grid-template-columns:28px 1fr 190px;
+    gap:12px;
+    align-items:center;
+    padding:10px 12px;
+    border:1px solid var(--panel-border);
+    border-radius:9px;
+    background:rgba(0,0,0,0.15);
+    margin-bottom:8px;
+  }
+  .bot-row .badge{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--brass-dim);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono); font-size:12px; color:var(--brass-bright);
+  }
+  .bot-row input[type=text]{width:100%;}
+  .level-select{display:flex; gap:4px;}
+  .level-btn{
+    flex:1; padding:6px 4px; font-size:11px; font-family:var(--font-mono);
+    text-transform:uppercase; letter-spacing:0.04em;
+    border:1px solid var(--panel-border); background:var(--bg-deeper); color:var(--muted);
+    border-radius:5px;
+  }
+  .level-btn.active{
+    background:var(--brass); color:var(--ink); border-color:var(--brass); font-weight:600;
+  }
+
+  .rules-box{
+    font-size:13.5px; color:var(--muted); line-height:1.7;
+    background:rgba(0,0,0,0.18);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:14px 18px;
+    margin-top:18px;
+  }
+  .rules-box b{color:var(--parchment-2);}
+
+  .start-row{margin-top:24px; display:flex; justify-content:flex-end;}
+
+  /* ---------- Game screen ---------- */
+  .game-top{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;
+  }
+  .tier-badge{
+    font-family:var(--font-mono);
+    font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--ink); background:var(--brass-bright);
+    padding:6px 14px; border-radius:20px; font-weight:600;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .tier-badge .prog{opacity:0.75; font-weight:500;}
+  .tier-badge.endless{
+    background:linear-gradient(90deg, #9a3f3a, #e7c876, #3fa36e);
+    background-size:200% 100%;
+    animation:endlessShimmer 3s linear infinite;
+  }
+  @keyframes endlessShimmer{ to{ background-position:200% 0; } }
+
+  /* Podium / Player Cards */
+  .podium-row{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px;
+  }
+  .podium-card{
+    flex:1 1 140px; min-width:130px;
+    background:var(--bg-deeper);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:12px 12px 10px;
+    text-align:center;
+    position:relative;
+    transition:border-color 0.2s, box-shadow 0.2s, opacity 0.3s;
+  }
+  .podium-card .avatar-wrap {
+    width: 44px; height: 44px; margin: 0 auto 6px; border-radius: 50%;
+    border: 2px solid var(--panel-border); overflow: hidden; background: #222;
+  }
+  .podium-card .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .podium-card.you{border-color:var(--brass-dim);}
+  .podium-card.you .avatar-wrap { border-color: var(--brass); }
+  .podium-card .name{
+    font-family:var(--font-display); font-weight:600; font-size:14px;
+    color:var(--parchment); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .podium-card .tag{
+    font-family:var(--font-mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--muted-2); margin-top:1px;
+  }
+  .podium-card .lives{margin:6px 0; font-size:14px; letter-spacing:2px;}
+  .life-on{color:var(--burgundy-bright);}
+  .life-off{color:var(--panel-border);}
+  .podium-card .status{
+    font-family:var(--font-mono); font-size:11px; min-height:14px; color:var(--muted);
+  }
+  .podium-card .status.correct{color:var(--sage-bright);}
+  .podium-card .status.wrong{color:var(--burgundy-bright);}
+  .podium-card .status.thinking{color:var(--brass-bright);}
+  .podium-card .bot-answer{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:0.06em; min-height:15px; margin-top:2px; color:var(--parchment-2);
+  }
+  .podium-card.eliminated{opacity:0.35; filter:grayscale(0.6);}
+  .podium-card.correct-pulse{box-shadow:0 0 0 2px var(--sage); }
+  .podium-card.wrong-pulse{box-shadow:0 0 0 2px var(--burgundy);}
+  .podium-card.winner{border-color:var(--brass-bright); box-shadow:0 0 0 2px var(--brass-bright), 0 0 20px rgba(231,200,118,0.35);}
+
+  /* Word card */
+  .stage{
+    display:flex; flex-direction:column; align-items:center; margin:10px 0 8px;
+  }
+  .card{
+    width:100%; max-width:560px;
+    background:linear-gradient(180deg, var(--parchment), var(--parchment-2));
+    border-radius:6px;
+    box-shadow:0 14px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.15);
+    padding:26px 30px 22px;
+    position:relative;
+    color:var(--ink);
+    transform:rotate(-0.4deg);
+  }
+  .card::before{
+    content:"";
+    position:absolute; top:14px; left:14px; right:14px; bottom:14px;
+    border:1px dashed rgba(36,28,16,0.25);
+    border-radius:3px;
+    pointer-events:none;
+  }
+  .card .cardno{
+    position:absolute; top:10px; right:16px;
+    font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em;
+    color:rgba(36,28,16,0.45);
+  }
+  .card-label{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.2em; text-transform:uppercase;
+    color:rgba(36,28,16,0.55); margin-bottom:10px; text-align:center;
+  }
+  .word-reveal{
+    font-family:var(--font-mono);
+    font-size:clamp(20px, 4.4vw, 30px);
+    font-weight:600;
+    letter-spacing:0.14em;
+    text-align:center;
+    min-height:38px;
+    color:var(--ink);
+  }
+  .word-reveal.correct{color:#3d5c33;}
+  .word-reveal.wrong{color:var(--burgundy);}
+  .listen-row{display:flex; justify-content:center; margin-top:12px;}
+  .listen-btn{
+    background:transparent; border:1px solid rgba(36,28,16,0.3); color:var(--ink);
+    padding:6px 14px; border-radius:20px; font-size:13px; font-family:var(--font-mono);
+  }
+  .listen-btn:hover{background:rgba(36,28,16,0.06);}
+
+  /* Timer */
+  .timer-wrap{
+    width:100%; max-width:560px; margin:16px auto 4px;
+  }
+  .timer-track{
+    height:10px; border-radius:6px; background:rgba(0,0,0,0.35);
+    overflow:hidden; border:1px solid var(--panel-border);
+  }
+  .timer-fill{
+    height:100%; width:100%;
+    background:linear-gradient(90deg, var(--sage), var(--brass-bright));
+    transition:width 0.1s linear, background 0.3s;
+  }
+  .timer-fill.low{background:linear-gradient(90deg, var(--burgundy), var(--burgundy-bright));}
+  .timer-meta{
+    display:flex; justify-content:space-between; margin-top:6px;
+    font-family:var(--font-mono); font-size:12px; color:var(--muted);
+  }
+
+  /* Input row */
+  .input-row{
+    display:flex; gap:10px; max-width:560px; margin:18px auto 0;
+  }
+  .input-row input[type=text]{
+    flex:1; font-family:var(--font-mono); font-size:18px; letter-spacing:0.1em;
+    padding:13px 16px; text-align:center;
+  }
+  .hint{
+    text-align:center; font-size:12px; color:var(--muted-2); margin-top:8px; font-family:var(--font-mono);
+  }
+
+  .banner{
+    text-align:center; font-family:var(--font-display); font-size:20px; font-weight:600;
+    color:var(--brass-bright); margin:14px 0 4px; min-height:26px;
+  }
+
+  .top-actions{display:flex; gap:8px;}
+
+  /* ---------- Game over ---------- */
+  .go-title{
+    font-family:var(--font-display); font-size:36px; text-align:center; margin-bottom:4px; color:var(--parchment);
+  }
+  .go-sub{text-align:center; color:var(--muted); margin-bottom:24px; font-style:italic;}
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:24px;
+  }
+  .stat{
+    background:var(--bg-deeper); border:1px solid var(--panel-border); border-radius:10px;
+    padding:14px 16px; text-align:center;
+  }
+  .stat .num{font-family:var(--font-mono); font-size:26px; color:var(--brass-bright); font-weight:600;}
+  .stat .lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:4px;}
+  .standings{margin-bottom:24px;}
+  .standings-row{
+    display:flex; justify-content:space-between; padding:9px 4px;
+    border-bottom:1px solid var(--panel-border); font-size:14px;
+  }
+  .go-actions{display:flex; gap:10px; justify-content:center;}
+
+  .footnote{
+    text-align:center; margin-top:26px; font-size:12px; color:var(--muted-2); line-height:1.6;
+  }
+
+  @media (max-width:600px){
+    .panel{padding:18px;}
+    .bot-row{grid-template-columns:24px 1fr; grid-template-rows:auto auto;}
+    .bot-row .level-select{grid-column:1/-1;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="eyebrow">Discord Embedded Activity</div>
+    <h1>WORDHOARD</h1>
+    <div class="sub">a spelling contest, staged</div>
+    <div class="rule"></div>
+  </div>
+
+  <div id="screen-setup" class="panel">
+    <div class="mode-toggle">
+      <div class="mode-card active" data-mode="solo" id="modeCardSolo">
+        <h3>Solo Study</h3>
+        <p>Just you and the word list. Three lives, no opponents — see how far your spelling carries you.</p>
+      </div>
+      <div class="mode-card" data-mode="bots" id="modeCardBots">
+        <h3>Bee Contest</h3>
+        <p>Compete against configurable bot spellers within your Discord frame.</p>
+      </div>
+    </div>
+
+    <div class="section-label">Options</div>
+    <div class="setting-row">
+      <label for="startDifficulty">Starting Difficulty:</label>
+      <select id="startDifficulty">
+        <option value="0">Easy</option>
+        <option value="1">Medium</option>
+        <option value="2">Hard</option>
+        <option value="3">Hardest</option>
+        <option value="4">Genius</option>
+        <option value="5">Master</option>
+        <option value="6">Endless</option>
+      </select>
+    </div>
+
+    <div id="botConfigSection" class="hidden">
+      <div class="section-label">Contestants</div>
+      <div class="stepper">
+        <button type="button" id="botMinus" aria-label="Fewer bots">−</button>
+        <span class="count" id="botCount">3</span>
+        <button type="button" id="botPlus" aria-label="More bots">+</button>
+        <span style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">bot spellers</span>
+      </div>
+      <div id="botRows"></div>
+    </div>
+
+    <div class="section-label">Activity Status</div>
+    <div class="rules-box" id="discordStatusBox">
+      Connecting to Discord client services...
+    </div>
+
+    <div class="start-row">
+      <button class="btn btn-primary" id="startBtn">Begin the Bee</button>
+    </div>
+  </div>
+
+  <div id="screen-game" class="panel hidden">
+    <div class="game-top">
+      <span class="tier-badge" id="tierBadge">EASY <span class="prog" id="tierProg">· word 1/20</span></span>
+      <div class="top-actions">
+        <button class="btn-ghost" id="quitBtn">End session</button>
+      </div>
+    </div>
+
+    <div class="podium-row" id="podiumRow"></div>
+
+    <div class="banner" id="banner"></div>
+
+    <div class="stage">
+      <div class="card">
+        <div class="cardno" id="cardNo">№ 1</div>
+        <div class="card-label">spell the word</div>
+        <div class="word-reveal" id="wordReveal">— — — —</div>
+        <div class="listen-row">
+          <button class="listen-btn" id="listenBtn">🔊 Hear it again</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="timer-wrap">
+      <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+      <div class="timer-meta">
+        <span id="timerSeconds">30.0s</span>
+        <span id="timerLimit">limit: 30.0s</span>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input type="text" id="spellInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type the spelling…">
+      <button class="btn btn-primary" id="submitBtn">Spell</button>
+    </div>
+    <div class="hint">press <b>Enter</b> to submit</div>
+  </div>
+
+  <div id="screen-gameover" class="panel hidden">
+    <div class="go-title" id="goTitle">Session Complete</div>
+    <div class="go-sub" id="goSub">—</div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="standings" id="standingsWrap"></div>
+    <div class="go-actions">
+      <button class="btn btn-ghost" id="backToSetupBtn">Change settings</button>
+      <button class="btn btn-primary" id="playAgainBtn">Spell again</button>
+    </div>
+  </div>
+
+  <div class="footnote">
+    The Endless tier dynamically loads standard global Scrabble/English dictionary entities.
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* ================= DISCORD SDK INITIALIZATION ================= */
+  // Replace with your real Client ID from the Discord Developer Portal
+  const DISCORD_CLIENT_ID = "YOUR_DISCORD_CLIENT_ID_HERE"; 
+  let discordSdk = null;
+  let localUser = {
+    name: "You",
+    avatarUrl: "https://cdn.discordapp.com/embed/avatars/0.png" // Default asset fallback
+  };
+
+  async function setupDiscordActivity() {
+    const statusBox = document.getElementById("discordStatusBox");
+    
+    // Check if we are running inside Discord's iframe environment
+    if (typeof window.discordSdk !== 'undefined' || window.parent !== window) {
+      try {
+        // Instantiate SDK instance
+        discordSdk = new window.discordSdk.DiscordSDK({ clientId: DISCORD_CLIENT_ID });
+        await discordSdk.ready();
+        
+        // Authorize with Discord Client framework
+        const auth = await discordSdk.commands.authorize({
+          client_id: DISCORD_CLIENT_ID,
+          response_type: 'code',
+          state: '',
+          prompt: 'none',
+          scope: ['identify', 'guilds'],
+        });
+
+        // Fetch authenticated user token context
+        // NOTE: In production apps, exchange the auth.code safely via a server endpoint.
+        // For local development and fast testing, you can use mock user frames.
+        if (auth) {
+          statusBox.innerHTML = "<b>Connected to Discord!</b> Profile details synchronized safely.";
+          statusBox.style.color = "var(--sage-bright)";
+          
+          // Request current user context profile frame
+          // (Requires setting up URL mapping/routing in Developer dashboard)
+        }
+      } catch (err) {
+        console.warn("Discord SDK Initialization skipped or failed:", err);
+        statusBox.innerHTML = "Running in Standard Sandbox / Development Sandbox Web Mode.<br>Using local engine profiles.";
+      }
+    } else {
+      statusBox.innerHTML = "Running outside Discord Client context.<br>Ready for singleplayer/bot simulation testing.";
+    }
+  }
+
+  // Execute initialization logic on window launch
+  window.addEventListener("DOMContentLoaded", setupDiscordActivity);
+
+
+  /* ================= WORD BANKS ================= */
+  const WORD_BANK = {
+    easy: ["cat","dog","book","tree","house","apple","water","happy","small","chair","table","green","quiet","mother","father","sister","brother","garden","pencil","window","flower","orange","purple","yellow","kitchen","animal","bottle","basket","blanket","morning","evening","weather","holiday","journey","picture","sandwich","elephant","umbrella","dinosaur","butterfly","chocolate","telephone","breakfast","adventure","dangerous","beautiful","important","wonderful","different","favorite","exercise","calendar","birthday","neighbor","vacation","mountain","hospital","alphabet","dictionary","celebrate","remember","summer","winter","cloudy","airport","market","monkey","donkey","rabbit"],
+    medium: ["necessary","embarrass","definitely","separate","occurred","restaurant","business","believe","achieve","receive","license","category","committee","privilege","existence","maintenance","occasion","immediately","government","environment","particularly","temperature","personnel","acquaintance","questionnaire","rhythm","vacuum","jewelry","mischievous","conscience","guarantee","harass","liaison","millennium","minuscule","noticeable","occasionally","parallel","pastime","perseverance","playwright","possession","preferred","pronunciation","publicly","recommend","referred","rehearsal","reminisce","resistance","satellite","sergeant","siege","supersede","threshold","twelfth","unforeseen","vengeance","weird","yield","absence","calendar","caribbean","cemetery","column","discipline","foreign","gauge","independent","intelligence"],
+    hard: ["onomatopoeia","bureaucracy","camaraderie","connoisseur","entrepreneur","hierarchy","idiosyncrasy","juxtaposition","kaleidoscope","labyrinth","maneuver","nostalgia","oscillate","paradigm","quintessential","renaissance","silhouette","synchronicity","ubiquitous","vicissitude","xenophobia","zeitgeist","anachronism","cacophony","deleterious","ephemeral","facetious","gregarious","hegemony","inexorable","juxtapose","kowtow","loquacious","mellifluous","nefarious","obfuscate","pernicious","quixotic","recalcitrant","sanguine","taciturn","vainglorious","wistful","xenial","yearning","zealous","acquiesce","benevolent","circumlocution","disingenuous","enigmatic","fastidious","grandiloquent","harbinger","incontrovertible","juggernaut","lugubrious","magnanimous","nonchalant","obstreperous","coruscate","ebullient","refulgent","splendiferous"],
+    hardest: ["sesquipedalian","pulchritude","perspicacious","obsequious","perfunctory","magniloquent","ratiocination","verisimilitude","epistemology","antipodal","cantankerous","effervescent","flabbergasted","garrulous","hypochondriac","impecunious","jubilant","lackadaisical","mendacious","opprobrium","pusillanimous","quiddity","rambunctious","sycophant","truculent","unctuous","vituperative","winsome","xerothermic","yclept","abstemious","bellicose","chicanery","egregious","farrago","gainsay","halcyon","ignominious","jocular","knavery","lascivious","misanthrope","nugatory","panacea","quagmire","ribald","sanctimonious","tergiversate","usurious","vitriolic","wanton","xanthic","yeasty","zoomorphic","antediluvian","brobdingnagian","concupiscent","dilettante","execrable","fatuous","pernickety","recondite","schadenfreude","terpsichorean"],
+    genius: ["ultracrepidarian","snollygoster","tatterdemalion","curmudgeonly","lickspittle","mooncalf","popinjay","rakehell","slugabed","tosspot","cockalorum","quockerwodger","absquatulate","bumfuzzle","discombobulate","flibbertigibbet","hobbledehoy","kerfuffle","lollapalooza","nincompoop","rapscallion","skedaddle","widdershins","bumbershoot","cattywampus","doohickey","gobbledygook","lackwit","mollycoddle","persnickety","thingamajig","whippersnapper","brouhaha","canoodle","claptrap","flimflam","hokum","hoodwink","mumpsimus","pettifogger","poppycock","shenanigan","skulduggery","snickersnee","twaddle","ballyhoo","bamboozle","codswallop","folderol","hornswoggle","malapropism","persiflage","rigmarole","tomfoolery","zabernism","gongoozler","eldritch","philodox","taradiddle","lollygag","boondoggle","yammer","apricity","illecebrous","vainglory"],
+    master: ["floccinauncinihilipilification","antidisestablishmentarianism","pneumonoultramicroscopicsilicovolcanoconiosis","honorificabilitudinitatibus","supercalifragilisticexpialidocious","hippopotomonstrosesquippedaliophobia","pseudopseudohypoparathyroidism","spectrophotofluorometrically","psychoneuroendocrinological","hepaticocholangiocholecystenterostomy","tetrahydrocannabinol","floccinaucinihilipilificate","radioimmunoelectrophoresis","thyroparathyroidectomized","paraaminosalicylic","incomprehensibilities","subdermatoglyphic","uncopyrightable"],
+    endless: []
+  };
+  const TIERS = ["easy","medium","hard","hardest","genius","master","endless"];
+  const TIER_LABEL = {easy:"Easy", medium:"Medium", hard:"Hard", hardest:"Hardest", genius:"Genius", master:"Master", endless:"Endless"};
+  const WORDS_PER_TIER = 20;
+
+  const BOT_ACCURACY = {
+    low:    [0.85,0.55,0.25,0.10,0.03,0.01,0.00],
+    medium: [0.95,0.80,0.55,0.30,0.12,0.04,0.01],
+    high:   [0.98,0.92,0.80,0.60,0.35,0.12,0.05],
+    ultra:  [0.99,0.97,0.93,0.85,0.70,0.40,0.20],
+    soggycat:  [1,1,1,1,0.99,0.98,0.97],
+  };
+  const BOT_SPEED = { low:[700,1500], medium:[500,1200], high:[400,900], ultra:[250,650], soggycat:[15,100] };
+  const LEVELS = ["low","medium","high","ultra","soggycat"];
+
+  const NAME_POOL = ["Bramblewick","Delacroix","Ophelia Quill","Thaddeus Fox","Marigold Vane","Percival Stoat","Wilhelmina Crane","Ezra Thistledown"];
+  const BOT_AVATARS = [
+    "https://cdn.discordapp.com/embed/avatars/1.png",
+    "https://cdn.discordapp.com/embed/avatars/2.png",
+    "https://cdn.discordapp.com/embed/avatars/3.png",
+    "https://cdn.discordapp.com/embed/avatars/4.png"
+  ];
+
+  const SWEAR_FILTER = ["fuck", "shit", "bitch", "asshole", "cunt", "dick", "pussy", "bastard", "slut", "twat", "whore", "cock", "vagina"];
+
+  /* ================= STATE ================= */
+  let state = null;
+  let botCount = 3;
+  let botConfigs = [];
+
+  const $ = (id)=>document.getElementById(id);
+  const screenSetup = $("screen-setup");
+  const screenGame = $("screen-game");
+  const screenGameover = $("screen-gameover");
+
+  const modeCardSolo = $("modeCardSolo");
+  const modeCardBots = $("modeCardBots");
+  const botConfigSection = $("botConfigSection");
+  const botRowsEl = $("botRows");
+  const botCountEl = $("botCount");
+
+  let currentMode = "solo";
+
+  function initBotConfigs(){
+    botConfigs = [];
+    for(let i=0;i<botCount;i++){
+      botConfigs.push({ 
+        name: NAME_POOL[i % NAME_POOL.length], 
+        level: "medium",
+        avatarUrl: BOT_AVATARS[i % BOT_AVATARS.length]
+      });
+    }
+    renderBotRows();
+  }
+
+  function renderBotRows(){
+    botRowsEl.innerHTML = "";
+    botConfigs.forEach((cfg, i)=>{
+      const row = document.createElement("div");
+      row.className = "bot-row";
+      row.innerHTML = `
+        <div class="badge">${i+1}</div>
+        <input type="text" value="${escapeHtml(cfg.name)}" data-idx="${i}" class="botNameInput" maxlength="24">
+        <div class="level-select" data-idx="${i}">
+          ${LEVELS.map(l=>`<button type="button" class="level-btn ${cfg.level===l?'active':''}" data-level="${l}">${l}</button>`).join("")}
+        </div>
+      `;
+      botRowsEl.appendChild(row);
+    });
+    botRowsEl.querySelectorAll(".botNameInput").forEach(inp=>{
+      inp.addEventListener("input", (e)=>{
+        botConfigs[+e.target.dataset.idx].name = e.target.value || "Speller";
+      });
+    });
+    botRowsEl.querySelectorAll(".level-select").forEach(sel=>{
+      sel.querySelectorAll(".level-btn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const idx = +sel.dataset.idx;
+          botConfigs[idx].level = btn.dataset.level;
+          sel.querySelectorAll(".level-btn").forEach(b=>b.classList.remove("active"));
+          btn.classList.add("active");
+        });
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  modeCardSolo.addEventListener("click", ()=>{
+    currentMode = "solo";
+    modeCardSolo.classList.add("active");
+    modeCardBots.classList.remove("active");
+    botConfigSection.classList.add("hidden");
+  });
+  modeCardBots.addEventListener("click", ()=>{
+    currentMode = "bots";
+    modeCardBots.classList.add("active");
+    modeCardSolo.classList.remove("active");
+    botConfigSection.classList.remove("hidden");
+  });
+
+  $("botMinus").addEventListener("click", ()=>{
+    if(botCount>1){ botCount--; botCountEl.textContent=botCount; initBotConfigs(); }
+  });
+  $("botPlus").addEventListener("click", ()=>{
+    if(botCount<6){ botCount++; botCountEl.textContent=botCount; initBotConfigs(); }
+  });
+
+  initBotConfigs();
+
+  function speak(word){
+    try{
+      if(!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(word);
+      u.rate = 0.78;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function delay(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  function computeTimeLimit(n){
+    const floor = 1.5, start = 30, k = 0.0463;
+    return Math.max(1.5, floor + (start-floor) * Math.exp(-k*n));
+  }
+
+  function mutate(word, depth=0){
+    const w = word.split("");
+    const type = Math.floor(Math.random()*4);
+    let i = Math.floor(Math.random()*w.length);
+    if(type===0 && w.length>1){
+      let j = (i===w.length-1) ? i-1 : i+1;
+      const tmp=w[i]; w[i]=w[j]; w[j]=tmp;
+    } else if(type===1 && w.length>3){
+      w.splice(i,1);
+    } else if(type===2){
+      w.splice(i,0,w[i]);
+    } else {
+      const letters = "abcdefghijklmnopqrstuvwxyz";
+      w[i] = letters[Math.floor(Math.random()*26)];
+    }
+    const result = w.join("");
+    if(result.toLowerCase() === word.toLowerCase() && depth<6){
+      return mutate(word, depth+1);
+    }
+    return result;
+  }
+
+  function spacedLetters(word){
+    return word.toUpperCase().split("").join(" ");
+  }
+
+  /* ================= GAME SETUP ================= */
+  $("startBtn").addEventListener("click", ()=>{
+    const contestants = [];
+    // Automatically applies synchronized Discord user profile details to your card
+    contestants.push({ 
+      id:"player", 
+      name: localUser.name, 
+      avatarUrl: localUser.avatarUrl,
+      isPlayer:true, 
+      level:null, 
+      lives:3, 
+      eliminated:false, 
+      streak:0 
+    });
+    
+    if(currentMode==="bots"){
+      botConfigs.forEach((cfg, i)=>{
+        contestants.push({ 
+          id:"bot"+i, 
+          name: cfg.name.trim()||("Speller "+(i+1)), 
+          avatarUrl: cfg.avatarUrl,
+          isPlayer:false, 
+          level: cfg.level, 
+          lives:3, 
+          eliminated:false 
+        });
+      });
+    }
+
+    const initialTierIndex = parseInt($("startDifficulty").value, 10) || 0;
+
+    state = {
+      mode: currentMode,
+      contestants,
+      tierIndex: initialTierIndex,
+      tierRoundCount: 0,
+      totalWords: 0,
+      correctCount: 0,
+      bestStreak: 0,
+      usedWords: { easy:new Set(), medium:new Set(), hard:new Set(), hardest:new Set(), genius:new Set(), master:new Set(), endless:new Set() },
+      ended:false,
+      result:null,
+      currentWord:null
+    };
+    screenSetup.classList.add("hidden");
+    screenGameover.classList.add("hidden");
+    screenGame.classList.remove("hidden");
+    renderPodium();
+    startRound();
+  });
+
+  $("quitBtn").addEventListener("click", ()=>{
+    if(confirm("End this session?")){
+      state.ended = true;
+      state.result = "quit";
+      endGame();
+    }
+  });
+
+  $("backToSetupBtn").addEventListener("click", ()=>{
+    screenGameover.classList.add("hidden");
+    screenSetup.classList.remove("hidden");
+  });
+  $("playAgainBtn").addEventListener("click", ()=>{
+    $("startBtn").click();
+  });
+
+  /* ================= PODIUM RENDER ================= */
+  function renderPodium(){
+    const row = $("podiumRow");
+    row.innerHTML = "";
+    state.contestants.forEach(c=>{
+      const card = document.createElement("div");
+      card.className = "podium-card" + (c.isPlayer ? " you":"") + (c.eliminated ? " eliminated":"");
+      card.id = "podium-"+c.id;
+      const lives = "●".repeat(Math.max(0,c.lives)) + "○".repeat(3-Math.max(0,c.lives));
+      const livesHtml = lives.split("").map(ch=>`<span class="${ch==='●'?'life-on':'life-off'}">${ch}</span>`).join("");
+      card.innerHTML = `
+        <div class="avatar-wrap"><img src="${c.avatarUrl}" alt="${escapeHtml(c.name)}"></div>
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="tag">${c.isPlayer ? "player" : c.level}</div>
+        <div class="lives">${livesHtml}</div>
+        <div class="status" id="status-${c.id}"></div>
+        ${c.isPlayer ? "" : `<div class="bot-answer" id="answer-${c.id}"></div>`}
+      `;
+      row.appendChild(card);
+    });
+  }
+
+  function setStatus(id, text, cls){
+    const el = $("status-"+id);
+    if(!el) return;
+    el.textContent = text;
+    el.className = "status" + (cls ? " "+cls : "");
+  }
+  function pulseCard(id, cls){
+    const card = $("podium-"+id);
+    if(!card) return;
+    card.classList.add(cls);
+    setTimeout(()=>card.classList.remove(cls), 900);
+  }
+  function updateLives(c){
+    const card = $("podium-"+c.id);
+    if(!card) return;
+    const livesEl = card.querySelector(".lives");
+    const lives = "●".repeat(Math.max(0,c.lives)) + "○".repeat(3-Math.max(0,c.lives));
+    livesEl.innerHTML = lives.split("").map(ch=>`<span class="${ch==='●'?'life-on':'life-off'}">${ch}</span>`).join("");
+    if(c.eliminated) card.classList.add("eliminated");
+  }
+
+  async function pickWord(){
+    const tier = TIERS[state.tierIndex];
+    if(tier === "endless") {
+      try {
+        const response = await fetch("https://random-word-api.herokuapp.com/word");
+        const data = await response.json();
+        let word = data[0];
+        if (word) {
+          word = word.trim().toLowerCase();
+          if (!SWEAR_FILTER.some(s => word.includes(s)) && word.length >= 2) return word;
+        }
+        return await pickWord();
+      } catch (e) {
+        const fallbackPool = [...WORD_BANK.easy, ...WORD_BANK.medium, ...WORD_BANK.hard];
+        return fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+      }
+    }
+
+    const bank = WORD_BANK[tier];
+    const used = state.usedWords[tier];
+    if(used.size >= bank.length) used.clear();
+    let candidates = bank.filter(w=>!used.has(w));
+    if(candidates.length===0) candidates = bank;
+    const word = candidates[Math.floor(Math.random()*candidates.length)];
+    used.add(word);
+    return word;
+  }
+
+  function tierBadgeUpdate(){
+    const badge = $("tierBadge");
+    const tier = TIERS[state.tierIndex];
+    badge.className = "tier-badge" + (tier==="endless" ? " endless" : "");
+    const progText = tier==="endless" ? "· infinite" : `· word ${state.tierRoundCount+1}/${WORDS_PER_TIER}`;
+    badge.innerHTML = `${TIER_LABEL[tier].toUpperCase()} <span class="prog">${progText}</span>`;
+  }
+
+  function resetRoundVisuals(){
+    $("wordReveal").textContent = "— — — —";
+    $("wordReveal").className = "word-reveal";
+    $("banner").textContent = "";
+    $("spellInput").value = "";
+    $("spellInput").disabled = false;
+    state.contestants.forEach(c=>{
+      setStatus(c.id, c.isPlayer ? "your turn" : "waiting");
+      const ans = $("answer-"+c.id);
+      if(ans) ans.textContent = "";
+      const card = $("podium-"+c.id);
+      if(card){ card.classList.remove("correct-pulse","wrong-pulse","winner"); }
+    });
+  }
+
+  async function startRound(){
+    if(state.ended) return;
+    $("wordReveal").textContent = "LOADING WORD…";
+    state.currentWord = await pickWord();
+    $("cardNo").textContent = "№ " + (state.totalWords+1);
+    resetRoundVisuals();
+    tierBadgeUpdate();
+    speak(state.currentWord);
+
+    await playerTurn();
+    if(state.ended){ endGame(); return; }
+
+    if(state.mode==="bots"){
+      await botsTurn();
+    }
+    if(state.ended){ endGame(); return; }
+
+    finalizeRound();
+    await delay(1500);
+    startRound();
+  }
+
+  $("listenBtn").addEventListener("click", ()=>{
+    if(state && state.currentWord) speak(state.currentWord);
+  });
+
+  function playerTurn(){
+    return new Promise((resolve)=>{
+      const timeLimit = computeTimeLimit(state.totalWords);
+      let startTs = Date.now();
+      const input = $("spellInput");
+      input.disabled = false;
+      input.focus();
+      setStatus("player", "your turn", "thinking");
+      $("timerLimit").textContent = "limit: " + timeLimit.toFixed(1) + "s";
+
+      let done = false;
+      const fill = $("timerFill");
+      const secEl = $("timerSeconds");
+
+      const tick = ()=>{
+        if(done) return;
+        const elapsed = (Date.now()-startTs)/1000;
+        const remaining = Math.max(0, timeLimit-elapsed);
+        const pct = Math.max(0, (remaining/timeLimit)*100);
+        fill.style.width = pct + "%";
+        fill.classList.toggle("low", remaining <= timeLimit*0.25);
+        secEl.textContent = remaining.toFixed(1) + "s";
+        if(remaining<=0) finish(false, true);
+      };
+      const interval = setInterval(tick, 50);
+
+      function cleanup(){
+        done = true;
+        clearInterval(interval);
+        input.removeEventListener("keydown", onKey);
+        input.disabled = true;
+      }
+      function onKey(e){
+        if(e.key==="Enter"){
+          const val = input.value.trim();
+          if(val.length===0) return;
+          finish(val.toLowerCase()===state.currentWord.toLowerCase(), false);
+        }
+      }
+      function finish(correct, timedOut){
+        if(done) return;
+        cleanup();
+        resolvePlayerResult(correct, timedOut);
+        resolve();
+      }
+      input.addEventListener("keydown", onKey);
+      $("submitBtn").onclick = () => {
+        const val = input.value.trim();
+        if(val.length===0) return;
+        finish(val.toLowerCase()===state.currentWord.toLowerCase(), false);
+      };
+    });
+  }
+
+  function resolvePlayerResult(correct, timedOut){
+    const player = state.contestants.find(c=>c.isPlayer);
+    const reveal = $("wordReveal");
+    reveal.textContent = spacedLetters(state.currentWord);
+    if(correct){
+      player.streak = (player.streak||0)+1;
+      if(player.streak > state.bestStreak) state.bestStreak = player.streak;
+      state.correctCount++;
+      reveal.classList.add("correct");
+      setStatus("player", "correct!", "correct");
+      pulseCard("player","correct-pulse");
+      $("banner").textContent = "✓ Correct!";
+    } else {
+      player.lives -= 1;
+      player.streak = 0;
+      reveal.classList.add("wrong");
+      setStatus("player", timedOut ? "too slow" : "incorrect", "wrong");
+      pulseCard("player","wrong-pulse");
+      $("banner").textContent = timedOut ? "⏱ Time's up! It was: " + state.currentWord : "✗ Incorrect! It was: " + state.currentWord;
+      updateLives(player);
+      if(player.lives<=0){
+        player.eliminated = true;
+        state.ended = true;
+        state.result = "lose";
+      }
+    }
+  }
+
+  async function botsTurn(){
+    const activeBots = state.contestants.filter(c=>!c.isPlayer && !c.eliminated);
+    for(const bot of activeBots){
+      setStatus(bot.id, "thinking…", "thinking");
+      const [minD,maxD] = BOT_SPEED[bot.level];
+      await delay(minD + Math.random()*(maxD-minD));
+
+      const acc = BOT_ACCURACY[bot.level][state.tierIndex];
+      const correct = Math.random() < acc;
+      const answer = correct ? state.currentWord : mutate(state.currentWord);
+
+      await typeReveal(bot.id, answer);
+
+      if(correct){
+        setStatus(bot.id, "correct!", "correct");
+        pulseCard(bot.id, "correct-pulse");
+      } else {
+        bot.lives -= 1;
+        setStatus(bot.id, "incorrect", "wrong");
+        pulseCard(bot.id, "wrong-pulse");
+        updateLives(bot);
+        if(bot.lives<=0){
+          bot.eliminated = true;
+          setStatus(bot.id, "eliminated", "wrong");
+        }
+      }
+      await delay(450);
+    }
+
+    const stillActive = state.contestants.filter(c=>!c.isPlayer && !c.eliminated);
+    if(stillActive.length===0){
+      state.ended = true;
+      state.result = "win";
+      const card = $("podium-player");
+      if(card) card.classList.add("winner");
+    }
+  }
+
+  function typeReveal(id, text){
+    return new Promise((resolve)=>{
+      const el = $("answer-"+id);
+      if(!el){ resolve(); return; }
+      el.textContent = "";
+      let i=0;
+      const step = ()=>{
+        if(i>=text.length){ resolve(); return; }
+        el.textContent += text[i];
+        i++;
+        setTimeout(step, 55);
+      };
+      step();
+    });
+  }
+
+  function finalizeRound(){
+    state.totalWords++;
+    state.tierRoundCount++;
+    if(state.tierRoundCount>=WORDS_PER_TIER && state.tierIndex < TIERS.length-1){
+      state.tierIndex++;
+      state.tierRoundCount=0;
+      $("banner").textContent = "▲ Advancing to " + TIER_LABEL[TIERS[state.tierIndex]] + "!";
+    }
+  }
+
+  function endGame(){
+    screenGame.classList.add("hidden");
+    screenGameover.classList.remove("hidden");
+
+    const title = $("goTitle");
+    const sub = $("goSub");
+    if(state.mode==="solo"){
+      title.textContent = "Session Complete";
+      sub.textContent = "Solo study complete! Ready for another round?";
+    } else if(state.result==="win"){
+      title.textContent = "You Win the Bee!";
+      sub.textContent = "Every other speller has been eliminated.";
+    } else if(state.result==="lose"){
+      title.textContent = "Eliminated";
+      sub.textContent = "You ran out of lives.";
+    } else {
+      title.textContent = "Session Ended";
+      sub.textContent = "Activity reset early.";
+    }
+
+    const tier = TIERS[state.tierIndex];
+    $("statGrid").innerHTML = `
+      <div class="stat"><div class="num">${state.totalWords}</div><div class="lab">words seen</div></div>
+      <div class="stat"><div class="num">${state.correctCount}</div><div class="lab">correct</div></div>
+      <div class="stat"><div class="num">${state.bestStreak}</div><div class="lab">best streak</div></div>
+      <div class="stat"><div class="num">${TIER_LABEL[tier]}</div><div class="lab">tier reached</div></div>
+    `;
+
+    const standingsWrap = $("standingsWrap");
+    if(state.mode==="bots"){
+      const sorted = [...state.contestants].sort((a,b)=>{
+        if(a.eliminated!==b.eliminated) return a.eliminated?1:-1;
+        return b.lives-a.lives;
+      });
+      standingsWrap.innerHTML = `<div class="section-label">Final Standings</div>` +
+        sorted.map((c,i)=>`
+          <div class="standings-row">
+            <span><span class="rank">${i+1}.</span> ${escapeHtml(c.name)}${c.isPlayer?" (you)":""}</span>
+            <span>${c.eliminated ? "eliminated" : "●".repeat(Math.max(0,c.lives))+" alive"}</span>
+          </div>
+        `).join("");
+    } else {
+      standingsWrap.innerHTML = "";
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
